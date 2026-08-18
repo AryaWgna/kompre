@@ -100,13 +100,156 @@ Normalisasi adalah proses **mengorganisasi data** dalam database untuk mengurang
 | **2NF** | Sudah 1NF + **tidak ada ketergantungan parsial** (semua atribut non-key bergantung sepenuhnya pada seluruh PK) | Ketergantungan parsial |
 | **3NF** | Sudah 2NF + **tidak ada ketergantungan transitif** (atribut non-key tidak bergantung pada atribut non-key lain) | Ketergantungan transitif |
 
-**Contoh pelanggaran 1NF:**
+---
 
-| nim | nama | hobi |
-|-----|------|------|
-| 001 | Andi | Baca, Renang, Gaming |
+### 📌 Contoh Lengkap Normalisasi: 1NF → 2NF → 3NF
 
-Kolom `hobi` mengandung banyak nilai → **bukan 1NF**. Solusi: pecah menjadi tabel terpisah.
+**Studi Kasus:** Data pemesanan barang di sebuah toko.
+
+#### ❌ Tabel Awal (Belum Normal / UNF)
+
+| no_pesanan | tgl_pesan | nama_pelanggan | alamat | kode_barang | nama_barang | harga | qty |
+|------------|-----------|----------------|--------|-------------|-------------|-------|-----|
+| P001 | 2026-01-10 | Andi | Jakarta | B01, B02 | Buku, Pensil | 15000, 3000 | 2, 5 |
+| P002 | 2026-01-11 | Budi | Bandung | B01 | Buku | 15000 | 1 |
+
+**Masalah:** Kolom `kode_barang`, `nama_barang`, `harga`, dan `qty` mengandung **banyak nilai dalam satu sel** → melanggar 1NF.
+
+---
+
+#### ✅ Tahap 1: Normalisasi ke 1NF
+
+> **Aturan 1NF:** Setiap kolom hanya berisi **satu nilai (atomik)**. Tidak boleh ada multi-value.
+
+**Cara:** Pecah baris yang mengandung banyak nilai menjadi baris terpisah.
+
+| no_pesanan | tgl_pesan | nama_pelanggan | alamat | kode_barang | nama_barang | harga | qty |
+|------------|-----------|----------------|--------|-------------|-------------|-------|-----|
+| P001 | 2026-01-10 | Andi | Jakarta | B01 | Buku | 15000 | 2 |
+| P001 | 2026-01-10 | Andi | Jakarta | B02 | Pensil | 3000 | 5 |
+| P002 | 2026-01-11 | Budi | Bandung | B01 | Buku | 15000 | 1 |
+
+✅ Sekarang setiap sel berisi **satu nilai saja** → sudah **1NF**.
+
+**Primary Key (Composite):** `(no_pesanan, kode_barang)`
+
+**Masalah yang masih ada:**
+- `nama_pelanggan` dan `alamat` hanya bergantung pada `no_pesanan` saja (bukan pada `kode_barang`) → **ketergantungan parsial**
+- `nama_barang` dan `harga` hanya bergantung pada `kode_barang` saja → **ketergantungan parsial**
+
+---
+
+#### ✅ Tahap 2: Normalisasi ke 2NF
+
+> **Aturan 2NF:** Sudah 1NF + **tidak ada ketergantungan parsial**. Semua atribut non-key harus bergantung pada **seluruh** Primary Key (bukan hanya sebagian PK).
+
+**Cara:** Pisahkan atribut yang hanya bergantung pada **sebagian PK** ke tabel terpisah.
+
+**Tabel Pesanan:**
+
+| no_pesanan | tgl_pesan | nama_pelanggan | alamat |
+|------------|-----------|----------------|--------|
+| P001 | 2026-01-10 | Andi | Jakarta |
+| P002 | 2026-01-11 | Budi | Bandung |
+
+> PK: `no_pesanan` — `tgl_pesan`, `nama_pelanggan`, `alamat` bergantung sepenuhnya pada `no_pesanan`.
+
+**Tabel Barang:**
+
+| kode_barang | nama_barang | harga |
+|-------------|-------------|-------|
+| B01 | Buku | 15000 |
+| B02 | Pensil | 3000 |
+
+> PK: `kode_barang` — `nama_barang` dan `harga` bergantung sepenuhnya pada `kode_barang`.
+
+**Tabel Detail Pesanan:**
+
+| no_pesanan | kode_barang | qty |
+|------------|-------------|-----|
+| P001 | B01 | 2 |
+| P001 | B02 | 5 |
+| P002 | B01 | 1 |
+
+> PK: `(no_pesanan, kode_barang)` — `qty` bergantung pada seluruh composite key.
+
+✅ Sekarang **tidak ada ketergantungan parsial** → sudah **2NF**.
+
+**Masalah yang masih ada:**
+- Di tabel Pesanan: `alamat` bergantung pada `nama_pelanggan`, bukan langsung pada `no_pesanan` → **ketergantungan transitif** (`no_pesanan → nama_pelanggan → alamat`)
+
+---
+
+#### ✅ Tahap 3: Normalisasi ke 3NF
+
+> **Aturan 3NF:** Sudah 2NF + **tidak ada ketergantungan transitif**. Atribut non-key tidak boleh bergantung pada atribut non-key lain.
+
+**Cara:** Pisahkan atribut yang mengalami ketergantungan transitif ke tabel terpisah.
+
+**Tabel Pesanan (diperbarui):**
+
+| no_pesanan | tgl_pesan | id_pelanggan |
+|------------|-----------|-------------|
+| P001 | 2026-01-10 | C01 |
+| P002 | 2026-01-11 | C02 |
+
+> PK: `no_pesanan`, FK: `id_pelanggan`
+
+**Tabel Pelanggan (baru):**
+
+| id_pelanggan | nama_pelanggan | alamat |
+|-------------|----------------|--------|
+| C01 | Andi | Jakarta |
+| C02 | Budi | Bandung |
+
+> PK: `id_pelanggan` — `nama_pelanggan` dan `alamat` bergantung langsung pada `id_pelanggan`.
+
+**Tabel Barang (tetap):**
+
+| kode_barang | nama_barang | harga |
+|-------------|-------------|-------|
+| B01 | Buku | 15000 |
+| B02 | Pensil | 3000 |
+
+**Tabel Detail Pesanan (tetap):**
+
+| no_pesanan | kode_barang | qty |
+|------------|-------------|-----|
+| P001 | B01 | 2 |
+| P001 | B02 | 5 |
+| P002 | B01 | 1 |
+
+✅ Tidak ada ketergantungan transitif → sudah **3NF**!
+
+---
+
+#### 🔑 Ringkasan Proses Normalisasi
+
+```
+UNF  → 1NF : Hilangkan multi-value (setiap sel hanya 1 nilai)
+1NF  → 2NF : Hilangkan ketergantungan parsial (pisahkan ke tabel sesuai dependensi PK)
+2NF  → 3NF : Hilangkan ketergantungan transitif (pisahkan atribut non-key yang bergantung pada non-key lain)
+```
+
+**Hasil akhir (4 tabel):**
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌────────────┐
+│  Pelanggan  │←─FK─│     Pesanan      │     │   Barang   │
+│ id_pelanggan│     │ no_pesanan       │     │kode_barang │
+│ nama        │     │ tgl_pesan        │     │nama_barang │
+│ alamat      │     │ id_pelanggan(FK) │     │harga       │
+└─────────────┘     └───────┬──────────┘     └─────┬──────┘
+                            │                      │
+                     ┌──────┴──────────────────────┴──────┐
+                     │        Detail Pesanan              │
+                     │ no_pesanan (FK)                     │
+                     │ kode_barang (FK)                    │
+                     │ qty                                 │
+                     └────────────────────────────────────┘
+```
+
+---
 
 ### SQL (Structured Query Language)
 
